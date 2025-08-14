@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:nexus/core/utils/connectivity_service.dart';
+import 'package:nexus/core/utils/conection/connectivity_service.dart';
 
 class ConnectivityInterceptor extends Interceptor {
   final ConnectivityService _connectivityService;

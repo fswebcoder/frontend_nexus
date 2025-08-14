@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nexus/core/router/app_router.dart';
 import 'package:nexus/presentation/widgets/connectivity_wrapper.dart';
 import 'package:nexus/presentation/screens/home_screen.dart';
 
@@ -32,6 +33,14 @@ class __MaterialWidgetState extends State<_MaterialWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(child: null);
+    return MaterialApp.router(
+      title: 'Nexus App',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.blue, visualDensity: VisualDensity.adaptivePlatformDensity),
+      routerConfig: appRouter,
+      builder: (context, child) {
+        return ConnectivityWrapper(child: child ?? const SizedBox.shrink());
+      },
+    );
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nexus/core/utils/connectivity_service.dart';
+import 'package:nexus/core/utils/conection/connectivity_service.dart';
 import 'package:nexus/presentation/di/service_locator.dart';
 
 class ConnectivityWrapper extends StatefulWidget {

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:nexus/core/utils/shared_preferences_service.dart';
+import 'package:nexus/core/utils/shared_preferences/shared_preferences_service.dart';
 
 class AuthInterceptor extends Interceptor {
   final SharedPreferencesService _sharedPreferencesService;

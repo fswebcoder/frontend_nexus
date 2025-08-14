@@ -19,26 +19,19 @@ Future<void> serviceLocatorInit() async {
 
   getIt.registerLazySingleton<SharedPreferencesService>(() => SharedPreferencesServiceImpl());
 
-  // Initialize SharedPreferences
   await getIt<SharedPreferencesService>().init();
 
-  // Inicializar ConnectivityService inmediatamente
-  // Esto asegura que el servicio esté listo desde el primer momento
   final connectivityService = getIt<ConnectivityService>();
-  // Solo necesitamos llamarlo para que se inicialice el stream
   await connectivityService.isConnected;
 
-  // Dio configuration
   getIt.registerLazySingleton<Dio>(() {
     final dio = Dio();
 
-    // Base options
-    dio.options.baseUrl = 'https://your-api.com/api/v1'; // Cambia por tu API
+    dio.options.baseUrl = 'https://localhost:/api/'; // Cambia por tu API
     dio.options.connectTimeout = const Duration(seconds: 30);
     dio.options.receiveTimeout = const Duration(seconds: 30);
     dio.options.sendTimeout = const Duration(seconds: 30);
 
-    // Headers por defecto
     dio.options.headers = {'Content-Type': 'application/json', 'Accept': 'application/json'};
 
     return dio;
