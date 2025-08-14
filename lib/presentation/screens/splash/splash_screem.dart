@@ -211,14 +211,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                       ],
                     ),
-                    child: Icon(Icons.hub, size: 30, color: AppColors.primaryColor.shade600),
+                    child: Icon(Icons.business_center_outlined, size: 30, color: AppColors.primaryColor.shade600),
                   ),
                 ),
               );
             },
           ),
 
-          _buildAppElement(_app1Animation, const Offset(-60, -60), Icons.dashboard_outlined, AppColors.accentColor),
+          _buildAppElement(_app1Animation, const Offset(-60, -60), Icons.balance_outlined, AppColors.accentColor),
           _buildAppElement(_app2Animation, const Offset(60, -60), Icons.analytics_outlined, AppColors.secondaryColor),
           _buildAppElement(_app3Animation, const Offset(-60, 60), Icons.people_outline, AppColors.primaryColor),
           _buildAppElement(_app4Animation, const Offset(60, 60), Icons.settings_outlined, AppColors.accentColor),
