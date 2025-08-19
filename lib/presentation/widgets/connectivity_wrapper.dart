@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nexus/core/utils/conection/connectivity_service.dart';
 import 'package:nexus/presentation/di/service_locator.dart';
+import 'package:nexus/shared/constants/message.contants.dart';
+import 'package:nexus/shared/widgets/toast_helper.dart';
 
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
@@ -14,6 +16,7 @@ class ConnectivityWrapper extends StatefulWidget {
 class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   late ConnectivityService _connectivityService;
   bool _showBanner = false;
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -22,22 +25,41 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   }
 
   void _initConnectivity() async {
-    _connectivityService = getIt<ConnectivityService>();
+    try {
+      _connectivityService = getIt<ConnectivityService>();
+      await Future.delayed(const Duration(milliseconds: 500));
 
-    final initialConnection = await _connectivityService.isConnected;
-    if (mounted) {
-      setState(() {
-        _showBanner = !initialConnection;
-      });
-    }
+      final initialConnection = await _connectivityService.isConnected;
 
-    _connectivityService.onConnectivityChanged.listen((isConnected) {
       if (mounted) {
         setState(() {
-          _showBanner = !isConnected;
+          _showBanner = !initialConnection;
+          _isInitialized = true;
         });
       }
-    });
+
+      _connectivityService.onConnectivityChanged.listen((isConnected) {
+        if (mounted) {
+          final shouldShowBanner = !isConnected;
+          if (_showBanner != shouldShowBanner) {
+            setState(() {
+              _showBanner = shouldShowBanner;
+
+              if (isConnected) {
+                ToastHelper.connectionRestored(icon: Icons.wifi_tethering);
+              }
+            });
+          }
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _showBanner = false;
+          _isInitialized = true;
+        });
+      }
+    }
   }
 
   @override
@@ -47,38 +69,39 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(child: Stack(children: [widget.child, if (_showBanner) _buildNoInternetBanner()]));
+    return Material(
+      child: Stack(children: [widget.child, if (_isInitialized && _showBanner) _buildNoInternetBanner()]),
+    );
   }
 
   Widget _buildNoInternetBanner() {
     return Positioned(
-      top: MediaQuery.of(context).padding.top,
+      bottom: 0,
       left: 0,
       right: 0,
-      child: Material(
-        elevation: 4,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: 50,
         color: Colors.red[600],
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.wifi_off, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                'Sin conexión a internet',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 14),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 12,
-                width: 12,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.wifi_off, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    MessageConstants.noInternetConnection,
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-            ],
+                Icon(Icons.error_outline, color: Colors.white, size: 20),
+              ],
+            ),
           ),
         ),
       ),

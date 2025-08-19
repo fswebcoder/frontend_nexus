@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nexus/core/router/app_router.dart';
 import 'package:nexus/presentation/widgets/connectivity_wrapper.dart';
-import 'package:nexus/presentation/screens/home_screen.dart';
+import 'package:toastification/toastification.dart';
 
 class NexusApp extends StatelessWidget {
   const NexusApp({super.key});
@@ -9,12 +9,6 @@ class NexusApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _MaterialWidget(key: key);
-    // return MaterialApp(
-    //   title: 'Nexus App',
-    //   debugShowCheckedModeBanner: false,
-    //   theme: ThemeData(primarySwatch: Colors.blue, visualDensity: VisualDensity.adaptivePlatformDensity),
-    //   home: const ConnectivityWrapper(child: HomeScreen()),
-    // );
   }
 }
 
@@ -33,14 +27,16 @@ class __MaterialWidgetState extends State<_MaterialWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Nexus App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue, visualDensity: VisualDensity.adaptivePlatformDensity),
-      routerConfig: appRouter,
-      builder: (context, child) {
-        return ConnectivityWrapper(child: child ?? const SizedBox.shrink());
-      },
+    return ToastificationWrapper(
+      child: MaterialApp.router(
+        title: 'Nexus App',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(primarySwatch: Colors.blue, visualDensity: VisualDensity.adaptivePlatformDensity),
+        routerConfig: appRouter,
+        builder: (context, child) {
+          return ConnectivityWrapper(child: child ?? const SizedBox.shrink());
+        },
+      ),
     );
   }
 }
