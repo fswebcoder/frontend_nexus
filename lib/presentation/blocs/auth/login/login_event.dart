@@ -1,8 +1,8 @@
 part of 'login_bloc.dart';
 
-abstract class LoginEvent extends Equatable {
-  const LoginEvent();
+abstract class LoginEvent {}
 
-  @override
-  List<Object> get props => [];
+class ChangeEmailEvent extends LoginEvent {
+  final String? email;
+  ChangeEmailEvent({this.email});
 }
