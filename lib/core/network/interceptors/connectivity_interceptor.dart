@@ -11,7 +11,12 @@ class ConnectivityInterceptor extends Interceptor {
     final isConnected = await _connectivityService.isConnected;
     if (!isConnected) {
       return handler.reject(
-        DioException(requestOptions: options, error: NoInternetException(), type: DioExceptionType.connectionError),
+        DioException(
+          requestOptions: options,
+          error: NoInternetException(),
+          type: DioExceptionType.connectionError,
+          message: 'No hay conexión a internet',
+        ),
       );
     }
     super.onRequest(options, handler);
@@ -19,10 +24,8 @@ class ConnectivityInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (err.type == DioExceptionType.connectionTimeout ||
-        err.type == DioExceptionType.receiveTimeout ||
-        err.type == DioExceptionType.sendTimeout ||
-        err.type == DioExceptionType.connectionError) {
+    // ✅ Verificar tipos de error de conexión
+    if (_isConnectionError(err.type)) {
       _connectivityService.isConnected.then((isConnected) {
         if (!isConnected) {
           handler.reject(
@@ -30,18 +33,24 @@ class ConnectivityInterceptor extends Interceptor {
               requestOptions: err.requestOptions,
               error: NoInternetException(),
               type: DioExceptionType.connectionError,
+              message: 'No hay conexión a internet',
             ),
           );
           return;
         }
-
         super.onError(err, handler);
       });
-
       return;
     }
 
     super.onError(err, handler);
+  }
+
+  bool _isConnectionError(DioExceptionType type) {
+    return type == DioExceptionType.connectionTimeout ||
+        type == DioExceptionType.receiveTimeout ||
+        type == DioExceptionType.sendTimeout ||
+        type == DioExceptionType.connectionError;
   }
 }
 

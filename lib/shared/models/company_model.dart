@@ -9,6 +9,21 @@ class CompanyModel extends Equatable {
 
   const CompanyModel({required this.id, required this.name, required this.shortName, required this.branding});
 
+  // 🎯 Método para convertir desde JSON
+  factory CompanyModel.fromJson(Map<String, dynamic> json) {
+    return CompanyModel(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      shortName: json['shortName'] ?? '',
+      branding: BrandingModel.fromJson(json['branding'] ?? {}),
+    );
+  }
+
+  // 🎯 Método para convertir a JSON
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'shortName': shortName, 'branding': branding.toJson()};
+  }
+
   CompanyModel copyWith({String? id, String? name, String? shortName, BrandingModel? branding}) => CompanyModel(
     id: id ?? this.id,
     name: name ?? this.name,

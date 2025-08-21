@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:nexus/domain/entities/auth/request/login.entitie.dart';
+import 'package:nexus/domain/usescases/auth/login_usecase.dart';
 import 'package:nexus/shared/widgets/toast_helper.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -157,9 +165,52 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
+
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 16),
+
+            const Text(
+              '🔐 Prueba de API Login',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+
+            ElevatedButton.icon(
+              onPressed: _testLoginAPI,
+              icon: const Icon(Icons.login, color: Colors.white),
+              label: const Text('🧪 Test Login API'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.all(16),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// 🧪 Prueba rápida del login API
+  Future<void> _testLoginAPI() async {
+    try {
+      ToastHelper.info("Probando login API...");
+
+      final loginUseCase = GetIt.instance<LoginUseCase>();
+
+      final loginEntity = LoginEntity(username: "admin@quintana.com", password: "Borealis2025a");
+
+      final result = await loginUseCase.call(loginEntity);
+
+      if (result.success && result.data != null) {
+        ToastHelper.success("${result.data!.email}");
+      } else {
+        ToastHelper.error("${result.message}");
+      }
+    } catch (e) {
+      ToastHelper.error("💥 Error inesperado: $e");
+    }
   }
 }

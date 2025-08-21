@@ -1,8 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:nexus/core/network/interceptors/connectivity_interceptor.dart';
 import 'package:nexus/core/utils/conection/connectivity_service.dart';
 import 'package:nexus/core/utils/shared_preferences/shared_preferences_service.dart';
 import 'package:nexus/core/utils/shared_preferences/singleton_shared_preferenses.dart';
@@ -26,6 +26,31 @@ class ApiDataSource {
 
   factory ApiDataSource.create() => ApiDataSource();
 
+  Future<ApiResponse<T>> postApi<T>(
+    String path,
+    T Function(dynamic value) mapperFunction, {
+    Map<String, String>? headers,
+    Map<String, dynamic>? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    HeaderType headerType = HeaderType.listFirstHeaders,
+  }) async {
+    try {
+      // ✅ Los interceptors ya manejan conectividad
+      final finalOptions = (options ?? Options()).copyWith(
+        headers: {...?options?.headers, ..._getHeaderType(headerType, headers)},
+      );
+
+      log('🎯 Enviando POST a: ${_dio.options.baseUrl}$path', name: 'ApiDataSource');
+
+      final response = await _dio.post(path, data: data, options: finalOptions, queryParameters: queryParameters);
+
+      return _manageResponse<T>(response, mapperFunction);
+    } catch (ex) {
+      return _handleException<T>(ex);
+    }
+  }
+
   Future<ApiResponse<T>> getApi<T>(
     String path,
     T Function(dynamic value) mapperFunction, {
@@ -35,15 +60,11 @@ class ApiDataSource {
     HeaderType headerType = HeaderType.listFirstHeaders,
   }) async {
     try {
-      final connectivity = await _connectivityService.isConnected;
-      if (!connectivity) {
-        return ApiResponse<T>.error(message: ApiBaseStrings.internetNotAvailable, statusCode: 0);
-      }
+      final finalOptions = (options ?? Options()).copyWith(
+        headers: {...?options?.headers, ..._getHeaderType(headerType, headers)},
+      );
 
-      final options = Options(headers: _getHeaderType(headerType, headers));
-
-      final response = await _dio.get(path, options: options, queryParameters: queryParameters);
-
+      final response = await _dio.get(path, options: finalOptions, queryParameters: queryParameters);
       return _manageResponse<T>(response, mapperFunction);
     } catch (ex) {
       return _handleException<T>(ex);
@@ -54,8 +75,8 @@ class ApiDataSource {
     if (ex is DioException) {
       return _handleDioException<T>(ex);
     }
-    log(ex.toString(), name: 'ApiSource Error', error: ex);
-    return ApiResponse<T>.error(message: ApiBaseStrings.defaultError, statusCode: 0);
+    log('❌ Error no manejado: $ex', name: 'ApiDataSource', error: ex);
+    return ApiResponse<T>.error(message: 'Error inesperado', statusCode: 0);
   }
 
   ApiResponse<T> _handleDioException<T>(DioException dioException) {
@@ -63,44 +84,60 @@ class ApiDataSource {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return ApiResponse<T>.error(message: 'Timeout de conexión', statusCode: 0);
+        return ApiResponse<T>.error(message: 'Timeout de conexión', statusCode: 408);
+      case DioExceptionType.connectionError:
+        // ✅ El interceptor ya maneja esto, pero por si acaso
+        return ApiResponse<T>.error(message: ApiBaseStrings.internetNotAvailable, statusCode: 0);
       case DioExceptionType.badResponse:
         if (dioException.response != null) {
           return _manageErrorResponse<T>(dioException.response!);
         }
-        return ApiResponse<T>.error(message: ApiBaseStrings.defaultError, statusCode: 0);
-      case DioExceptionType.connectionError:
-        return ApiResponse<T>.error(message: ApiBaseStrings.internetNotAvailable, statusCode: 0);
+        return ApiResponse<T>.error(message: 'Respuesta inválida del servidor', statusCode: 0);
       case DioExceptionType.cancel:
         return ApiResponse<T>.error(message: 'Petición cancelada', statusCode: 0);
       default:
-        return ApiResponse<T>.error(message: ApiBaseStrings.defaultError, statusCode: 0);
+        return ApiResponse<T>.error(message: 'Error de red', statusCode: 0);
     }
   }
 
   ApiResponse<T> _manageErrorResponse<T>(Response response) {
     final statusCode = response.statusCode ?? 0;
+    final data = response.data;
 
-    if (statusCode >= 500) {
-      return ApiResponse<T>.error(message: ApiBaseStrings.defaultError, statusCode: 0);
-    } else {
-      return _errorFromResponse<T>(response);
+    String message = 'Error del servidor';
+    if (data is Map<String, dynamic>) {
+      message = data['message'] ?? message;
     }
+
+    return ApiResponse<T>.error(
+      message: message,
+      statusCode: statusCode,
+      error: CustomErrorResultPresenter(message: message, statusCode: statusCode),
+      errors: data is Map ? (data['errors'] ?? {}) : {},
+    );
   }
 
-  ApiResponse<T> _errorFromResponse<T>(Response response) {
+  Future<ApiResponse<T>> _manageResponse<T>(Response response, T Function(dynamic value) mapperFunction) async {
     final statusCode = response.statusCode ?? 0;
-    final data = response.data;
-    final message = data['message'] ?? ApiBaseStrings.defaultError;
-    final errors = data['errors'] ?? {};
-    final error = CustomErrorResultPresenter(message: message, statusCode: statusCode);
-    return ApiResponse<T>.error(message: message, statusCode: statusCode, error: error, errors: errors);
+
+    // ✅ Solo códigos 200-299 son éxito
+    if (statusCode >= 200 && statusCode < 300) {
+      try {
+        final mappedData = mapperFunction(response.data);
+        return ApiResponse<T>.success(mappedData, statusCode);
+      } catch (e) {
+        log('❌ Error en mapeo de datos: $e', name: 'ApiDataSource', error: e);
+        return ApiResponse<T>.error(message: 'Error procesando respuesta', statusCode: statusCode);
+      }
+    }
+
+    return _manageErrorResponse<T>(response);
   }
 
   Map<String, String> _getHeaderType(HeaderType headerType, Map<String, String>? headers) {
     switch (headerType) {
       case HeaderType.noHeader:
-        return {};
+        return headers ?? {};
       case HeaderType.listFirstHeaders:
         return getNexusListHeaders(headers);
       case HeaderType.autorizationHeaders:
@@ -109,57 +146,36 @@ class ApiDataSource {
   }
 
   Map<String, String> getNexusListHeaders(Map<String, String>? headers) {
-    final String uuid = SingletonSharedPreferences().getToken() ?? "";
+    final String uuid = _singletonSharedPreferences.getToken() ?? "";
     headers = headers ?? <String, String>{};
-    headers = _setXFingerprint(headers, uuid);
-    headers = _setXDominio(headers, uuid);
-    headers[HttpHeaders.contentTypeHeader] = "application/json; charset=utf-8";
-    headers[HttpHeaders.acceptHeader] = "application/json; charset=UTF-8";
-    return headers;
-  }
 
-  Map<String, String> _setXFingerprint(Map<String, String> headers, String uuid) {
-    headers["X-Fingerprint"] = uuid;
-    return headers;
-  }
+    if (uuid.isNotEmpty) {
+      headers["X-Fingerprint"] = uuid;
+      final dominio = Environment.dominio ?? "default";
+      if (dominio != "domain") {
+        // Evitar valor por defecto
+        headers["X-Dominio"] = "${uuid}_$dominio";
+      }
+    }
 
-  Map<String, String> _setXDominio(Map<String, String> headers, String uuid) {
-    final dominio = Environment.dominio ?? "default";
-    final valorDominio = "${uuid}_$dominio";
-    headers["X-Dominio"] = valorDominio;
     return headers;
   }
 
   Map<String, String> getHeadersAuthorization(Map<String, String>? headers) {
-    final String uuid = SingletonSharedPreferences().getToken() ?? "";
+    final String token = _singletonSharedPreferences.getToken() ?? "";
     headers = headers ?? <String, String>{};
 
-    headers = _setXFingerprint(headers, uuid);
-    headers = _setXDominio(headers, uuid);
-
-    final token = _singletonSharedPreferences.getToken();
-    if (token != null && token.isNotEmpty) {
+    if (token.isNotEmpty) {
+      headers["X-Fingerprint"] = token;
       headers["Authorization"] = "Bearer $token";
-    }
 
-    headers[HttpHeaders.contentTypeHeader] = "application/json; charset=utf-8";
-    headers[HttpHeaders.acceptHeader] = "application/json; charset=UTF-8";
+      final dominio = Environment.dominio ?? "default";
+      if (dominio != "domain") {
+        headers["X-Dominio"] = "${token}_$dominio";
+      }
+    }
 
     return headers;
-  }
-
-  Future<ApiResponse<T>> _manageResponse<T>(Response response, T Function(dynamic value) mapperFunction) async {
-    final statusCode = response.statusCode ?? 0;
-
-    if (statusCode == 200 || statusCode == 400) {
-      return ApiResponse<T>.success(mapperFunction(response.data), statusCode);
-    }
-
-    if (statusCode >= 500) {
-      return ApiResponse<T>.error(message: ApiBaseStrings.defaultError, statusCode: 0);
-    } else {
-      return _errorFromResponse<T>(response);
-    }
   }
 }
 

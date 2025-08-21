@@ -7,6 +7,16 @@ class DocumentTypeModel extends Equatable {
 
   const DocumentTypeModel({required this.id, required this.name, required this.code});
 
+  // 🎯 Método para convertir desde JSON
+  factory DocumentTypeModel.fromJson(Map<String, dynamic> json) {
+    return DocumentTypeModel(id: json['id'] ?? '', name: json['name'] ?? '', code: json['code'] ?? '');
+  }
+
+  // 🎯 Método para convertir a JSON
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'code': code};
+  }
+
   DocumentTypeModel copyWith({String? id, String? name, String? code}) =>
       DocumentTypeModel(id: id ?? this.id, name: name ?? this.name, code: code ?? this.code);
 

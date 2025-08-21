@@ -1,20 +1,38 @@
 {
     "version": "0.2.0",
     "configurations": [
-        
         {
-            "name": "Flutter",
+            "name": "Flutter (Emulator)",
             "type": "dart",
             "request": "launch",
             "program": "lib/main.dart",
-            "flutterMode": "debug"
+            "flutterMode": "debug",
+            "toolArgs": [
+                "--dart-define=baseURl=http://10.0.2.2:8443/api/",
+                "--dart-define=domain=desarrollo"
+            ]
+        },
+        {
+            "name": "Flutter (Physical Device)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "flutterMode": "debug",
+            "toolArgs": [
+                "--dart-define=baseURl=http://172.17.18.37:8443/api/",
+                "--dart-define=domain=desarrollo"
+            ]
         },
         {
             "name": "Flutter (Release)",
             "type": "dart",
             "request": "launch",
             "program": "lib/main.dart",
-            "flutterMode": "release"
+            "flutterMode": "release",
+            "toolArgs": [
+                "--dart-define=baseURl=http://172.17.18.37:8443/api/",
+                "--dart-define=domain=produccion"
+            ]
         }
     ]
 }

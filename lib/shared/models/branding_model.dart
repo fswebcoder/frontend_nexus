@@ -13,6 +13,26 @@ class BrandingModel extends Equatable {
     required this.tertiaryColor,
   });
 
+  // 🎯 Método para convertir desde JSON
+  factory BrandingModel.fromJson(Map<String, dynamic> json) {
+    return BrandingModel(
+      logo: json['logo'] ?? '',
+      primaryColor: json['primaryColor'] ?? '',
+      secondaryColor: json['secondaryColor'] ?? '',
+      tertiaryColor: json['tertiaryColor'] ?? '',
+    );
+  }
+
+  // 🎯 Método para convertir a JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'logo': logo,
+      'primaryColor': primaryColor,
+      'secondaryColor': secondaryColor,
+      'tertiaryColor': tertiaryColor,
+    };
+  }
+
   BrandingModel copyWith({String? logo, String? primaryColor, String? secondaryColor, String? tertiaryColor}) =>
       BrandingModel(
         logo: logo ?? this.logo,
