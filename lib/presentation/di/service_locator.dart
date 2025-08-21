@@ -1,7 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:nexus/core/network/dio_client.dart';
 import 'package:nexus/core/network/interceptors/auth_interceptor.dart';
 import 'package:nexus/core/network/interceptors/connectivity_interceptor.dart';
 import 'package:nexus/core/network/interceptors/logging_interceptor.dart';
@@ -22,8 +21,6 @@ Future<void> serviceLocatorInit() async {
 
   await getIt<SharedPreferencesService>().init();
 
-  // El servicio de conectividad se inicializará automáticamente cuando sea necesario
-
   getIt.registerLazySingleton<Dio>(() {
     final dio = Dio();
 
@@ -31,7 +28,6 @@ Future<void> serviceLocatorInit() async {
     dio.options.connectTimeout = const Duration(seconds: 30);
     dio.options.receiveTimeout = const Duration(seconds: 30);
     dio.options.sendTimeout = const Duration(seconds: 30);
-
     dio.options.headers = {'Content-Type': 'application/json', 'Accept': 'application/json'};
 
     return dio;
@@ -42,12 +38,4 @@ Future<void> serviceLocatorInit() async {
   getIt.registerLazySingleton<ConnectivityInterceptor>(() => ConnectivityInterceptor(getIt()));
 
   getIt.registerLazySingleton<LoggingInterceptor>(() => LoggingInterceptor());
-
-  getIt.registerLazySingleton<DioClient>(() {
-    final dio = getIt<Dio>();
-
-    dio.interceptors.addAll([getIt<ConnectivityInterceptor>(), getIt<AuthInterceptor>(), getIt<LoggingInterceptor>()]);
-
-    return DioClient(dio);
-  });
 }
