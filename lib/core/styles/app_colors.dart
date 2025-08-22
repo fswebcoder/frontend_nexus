@@ -6,6 +6,10 @@ class AppColors {
   static const int _secondaryColorValue = 0xFFF57E31;
   static const blueColor = Color(0xff409CFF);
 
+  static Color? _customPrimaryColor;
+  static Color? _customSecondaryColor;
+  static Color? _customAccentColor;
+
   static const Map<int, Color> primaryColorCodes = {
     50: Color(0xFFE0E8F0),
     100: Color(0xFFB3C5DA),
@@ -40,10 +44,30 @@ class AppColors {
   };
 
   static const MaterialColor primaryColor = MaterialColor(_primarColorValue, primaryColorCodes);
-
   static const MaterialColor accentColor = MaterialColor(_accentColorValue, accentColorCodes);
-
   static const MaterialColor secondaryColor = MaterialColor(_secondaryColorValue, secondaryColorCodes);
+
+  static Color get primary => _customPrimaryColor ?? primaryColor;
+  static Color get accent => _customAccentColor ?? accentColor;
+  static Color get secondary => _customSecondaryColor ?? secondaryColor;
+
+  static void setCustomColors({String? primaryColor, String? secondaryColor, String? accentColor}) {
+    if (primaryColor != null && primaryColor.isNotEmpty) {
+      _customPrimaryColor = Color(int.parse('0xFF${primaryColor.replaceAll('#', '')}'));
+    }
+    if (secondaryColor != null && secondaryColor.isNotEmpty) {
+      _customSecondaryColor = Color(int.parse('0xFF${secondaryColor.replaceAll('#', '')}'));
+    }
+    if (accentColor != null && accentColor.isNotEmpty) {
+      _customAccentColor = Color(int.parse('0xFF${accentColor.replaceAll('#', '')}'));
+    }
+  }
+
+  static void resetColors() {
+    _customPrimaryColor = null;
+    _customSecondaryColor = null;
+    _customAccentColor = null;
+  }
 
   static const Color hintColor = Color(0xFFBDBDBD);
   static const Color icons = Color(0xFFFFFFFF);
