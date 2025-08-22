@@ -259,7 +259,7 @@ class _FloatLabelInputState extends State<FloatLabelInput> with SingleTickerProv
             final progress = _labelAnimation.value;
 
             return Transform.translate(
-              offset: Offset(0, 16.5 - (25.0 * progress)),
+              offset: Offset(0, 12.5 - (24.0 * progress)),
               child: Transform.scale(
                 scale: 1.0 - (0.25 * progress),
                 alignment: Alignment.centerLeft,
